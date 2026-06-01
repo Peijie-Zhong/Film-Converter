@@ -3,35 +3,60 @@
 //  Film-Converter
 //
 
-enum FilmFormat: String, CaseIterable, Identifiable {
-    case thirtyFiveMillimeter = "35mm"
-    case oneTwenty = "120mm"
+struct FilmCatalog: Hashable {
+    var stocks: [FilmStock] = []
+    var cameraModels: [CameraModelOption] = []
+    var formats: [FilmFormatOption] = []
+    var frameSizes: [FilmFrameSizeOption] = []
 
-    var id: String { rawValue }
+    static let empty = FilmCatalog()
+
+    var defaultStock: FilmStock? {
+        stocks.first
+    }
+
+    var defaultFormat: String {
+        formats.first?.name ?? "35mm"
+    }
+
+    var defaultFrameSize: String {
+        frameSizes.first?.name ?? "35mm"
+    }
+
+    func stock(named model: String) -> FilmStock? {
+        stocks.first { $0.model == model }
+    }
 }
 
-enum FilmFrameSize: String, CaseIterable, Identifiable {
-    case fullFrame35mm = "35mm"
-    case halfFrame35mm = "Half Frame"
-    case panoramic35mm = "XPan / Panoramic"
-    case oneTwenty = "120mm"
-    case sixByFourFive = "6x4.5"
-    case sixBySix = "6x6"
-    case sixBySeven = "6x7"
-    case sixByEight = "6x8"
-    case sixByNine = "6x9"
-    case sixByTwelve = "6x12"
-    case sixBySeventeen = "6x17"
+struct CameraModelOption: Identifiable, Hashable {
+    var id: String { name }
+    var name: String
+}
 
-    var id: String { rawValue }
+struct FilmFormatOption: Identifiable, Hashable {
+    var id: String { name }
+    var name: String
+}
+
+struct FilmFrameSizeOption: Identifiable, Hashable {
+    var id: String { name }
+    var name: String
+    var formatName: String?
 }
 
 struct NewFilmRollForm {
-    var stock = FilmStock.library[0]
-    var format = FilmFormat.thirtyFiveMillimeter
-    var frameSize = FilmFrameSize.fullFrame35mm
+    var stock: FilmStock?
+    var cameraModel = ""
+    var format = ""
+    var frameSize = ""
     var isoText = "400"
     var notes = ""
+
+    init(catalog: FilmCatalog = .empty) {
+        stock = catalog.defaultStock
+        format = catalog.defaultFormat
+        frameSize = catalog.defaultFrameSize
+    }
 
     var isoValue: Int? {
         Int(isoText)

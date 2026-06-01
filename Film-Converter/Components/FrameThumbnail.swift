@@ -8,6 +8,7 @@ import SwiftUI
 struct FrameThumbnail: View {
     let frame: FilmFrame
     let isSelected: Bool
+    let transitionNamespace: Namespace.ID
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -16,6 +17,7 @@ struct FrameThumbnail: View {
                 .overlay {
                     FrameArtwork(frame: frame, showsFrameNumber: true)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .matchedGeometryEffect(id: frame.id, in: transitionNamespace)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay {

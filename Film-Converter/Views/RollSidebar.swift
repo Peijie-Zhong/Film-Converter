@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct RollSidebar: View {
+    @Environment(\.appLanguage) private var language
     let filmRolls: [FilmRoll]
     let selectedRollID: FilmRoll.ID?
     let appearanceMode: AppAppearanceMode
@@ -13,6 +14,8 @@ struct RollSidebar: View {
     let onOpenSettings: () -> Void
     let onToggleAppearance: () -> Void
     let onSelectRoll: (FilmRoll) -> Void
+    let onEditRoll: (FilmRoll) -> Void
+    let onRequestDeleteRoll: (FilmRoll) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -26,13 +29,13 @@ struct RollSidebar: View {
                     Image(systemName: "plus")
                 }
                 .buttonStyle(.borderless)
-                .help("添加胶卷")
+                .help(language.text("addRoll"))
             }
             .padding(.horizontal, 16)
             .padding(.top, 18)
             .padding(.bottom, 14)
 
-            Text("胶卷")
+            Text(language.text("rolls"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 16)
@@ -49,6 +52,19 @@ struct RollSidebar: View {
                         .onTapGesture {
                             onSelectRoll(roll)
                         }
+                        .contextMenu {
+                            Button {
+                                onEditRoll(roll)
+                            } label: {
+                                Label(language.text("editRoll"), systemImage: "pencil")
+                            }
+
+                            Button(role: .destructive) {
+                                onRequestDeleteRoll(roll)
+                            } label: {
+                                Label(language.text("deleteRoll"), systemImage: "trash")
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 10)
@@ -62,14 +78,14 @@ struct RollSidebar: View {
                         .frame(width: 28, height: 28)
                 }
                 .buttonStyle(.borderless)
-                .help("设置")
+                .help(language.text("settings"))
 
                 Button(action: onToggleAppearance) {
                     Image(systemName: appearanceMode.toggleIcon)
                         .frame(width: 28, height: 28)
                 }
                 .buttonStyle(.borderless)
-                .help("切换白天/夜间模式")
+                .help(language.text("toggleAppearance"))
 
                 Spacer()
             }
@@ -82,6 +98,7 @@ struct RollSidebar: View {
 }
 
 private struct RollRow: View {
+    @Environment(\.appLanguage) private var language
     let roll: FilmRoll
     let isSelected: Bool
 
@@ -101,7 +118,7 @@ private struct RollRow: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text("\(roll.stock) · \(roll.frameCount) 张")
+                Text("\(roll.stock) · \(String(format: language.text("framesCountFormat"), roll.frameCount))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

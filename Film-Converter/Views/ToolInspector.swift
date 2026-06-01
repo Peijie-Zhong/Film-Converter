@@ -6,15 +6,29 @@
 import SwiftUI
 
 struct ToolInspector: View {
+    @Environment(\.appLanguage) private var language
     @Binding var activeTool: ToolPanel?
     @Binding var frame: FilmFrame
+    let roll: FilmRoll
+    @State private var isShowingExportSettings = false
 
     var body: some View {
         HStack(spacing: 0) {
             VStack(spacing: 10) {
                 ToolButton(
+                    systemName: "square.and.arrow.up",
+                    title: language.text("export"),
+                    isActive: isShowingExportSettings
+                ) {
+                    isShowingExportSettings = true
+                }
+
+                Divider()
+                    .padding(.vertical, 4)
+
+                ToolButton(
                     systemName: "wand.and.stars.inverse",
-                    title: "去色罩",
+                    title: language.text("maskRemoval"),
                     isActive: activeTool == .maskRemoval
                 ) {
                     withAnimation(.snappy(duration: 0.22)) {
@@ -27,7 +41,7 @@ struct ToolInspector: View {
 
                 ToolButton(
                     systemName: "circle.lefthalf.filled",
-                    title: "反转",
+                    title: language.text("invert"),
                     isActive: frame.editSettings.isInverted
                 ) {
                     withAnimation(.snappy(duration: 0.16)) {
@@ -35,25 +49,23 @@ struct ToolInspector: View {
                     }
                 }
 
-                ToolButton(systemName: "scissors", title: "切分", isActive: false) {}
-                    .disabled(true)
                 ToolButton(
                     systemName: "crop",
-                    title: "裁切",
+                    title: language.text("crop"),
                     isActive: activeTool == .crop
                 ) {
                     withAnimation(.snappy(duration: 0.22)) {
                         activeTool = activeTool == .crop ? nil : .crop
                     }
                 }
-                ToolButton(systemName: "slider.horizontal.3", title: "调色", isActive: false) {}
+                ToolButton(systemName: "slider.horizontal.3", title: language.text("colorAdjust"), isActive: false) {}
                     .disabled(true)
 
                 Spacer()
 
                 ToolButton(
                     systemName: "info.circle",
-                    title: "照片信息",
+                    title: language.text("photoInfo"),
                     isActive: activeTool == .photoInfo
                 ) {
                     withAnimation(.snappy(duration: 0.22)) {
@@ -87,6 +99,9 @@ struct ToolInspector: View {
         .frame(width: activeTool == nil ? 62 : 330)
         .animation(.snappy(duration: 0.22), value: activeTool)
         .background(.regularMaterial)
+        .sheet(isPresented: $isShowingExportSettings) {
+            ExportPhotoSheet(frame: frame, roll: roll)
+        }
     }
 }
 

@@ -10,13 +10,15 @@ struct FrameArtwork: View {
     let frame: FilmFrame
     var showsFrameNumber = false
     var appliesCrop = true
+    var appliesTransform = true
+    var cornerRadius: CGFloat = 6
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
             editedImageContent
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: cornerRadius)
                         .strokeBorder(.white.opacity(0.3), lineWidth: 1)
                 }
                 .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
@@ -59,6 +61,9 @@ struct FrameArtwork: View {
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
             .clipped()
+            .animation(.snappy(duration: 0.24), value: crop.rotationDegrees)
+            .animation(.snappy(duration: 0.18), value: crop.isFlippedHorizontally)
+            .animation(.snappy(duration: 0.18), value: crop.isFlippedVertically)
         }
     }
 
@@ -67,17 +72,18 @@ struct FrameArtwork: View {
         canvasSize: CGSize,
         crop: CropSettings
     ) -> some View {
-        let imageFrameSize = crop.isRotatedSideways
+        let shouldApplyTransform = appliesTransform
+        let imageFrameSize = shouldApplyTransform && crop.isRotatedSideways
             ? CGSize(width: canvasSize.height, height: canvasSize.width)
             : canvasSize
         let maskRemoval = frame.editSettings.maskRemoval
 
         let transformed = imageContent
             .frame(width: imageFrameSize.width, height: imageFrameSize.height)
-            .rotationEffect(.degrees(Double(crop.rotationDegrees)))
+            .rotationEffect(.degrees(shouldApplyTransform ? Double(crop.rotationDegrees) : 0))
             .scaleEffect(
-                x: crop.isFlippedHorizontally ? -1 : 1,
-                y: crop.isFlippedVertically ? -1 : 1
+                x: shouldApplyTransform && crop.isFlippedHorizontally ? -1 : 1,
+                y: shouldApplyTransform && crop.isFlippedVertically ? -1 : 1
             )
             .brightness(maskRemoval.brightnessAdjustment)
             .contrast(maskRemoval.contrastAdjustment)
@@ -100,7 +106,7 @@ struct FrameArtwork: View {
                 .resizable()
                 .scaledToFill()
         } else {
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: cornerRadius)
                 .fill(
                     LinearGradient(
                         colors: frame.palette,
@@ -110,7 +116,7 @@ struct FrameArtwork: View {
                 )
                 .overlay {
                     NegativePattern()
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
                         .opacity(0.34)
                 }
         }

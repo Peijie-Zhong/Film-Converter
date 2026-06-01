@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct CropPanel: View {
+    @Environment(\.appLanguage) private var language
     @Binding var crop: CropSettings
     let imageAspectRatio: CGFloat
 
@@ -21,15 +22,15 @@ struct CropPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("裁切")
+                Text(language.text("crop"))
                     .font(.system(size: 18, weight: .semibold))
-                Text("调整照片比例、裁切范围和画面位置")
+                Text(language.text("cropSubtitle"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("比例")
+                Text(language.text("ratio"))
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.secondary)
 
@@ -40,66 +41,74 @@ struct CropPanel: View {
                                 crop.setAspectRatio(ratio, in: canvasAspectRatio)
                             }
                         } label: {
-                            Text(ratio.title)
+                            Text(ratio.title(language: language))
                                 .font(.system(size: 13, weight: .medium))
-                                .frame(maxWidth: .infinity)
+                                .frame(maxWidth: .infinity, minHeight: 34)
+                                .background {
+                                    RoundedRectangle(cornerRadius: 7)
+                                        .fill(crop.aspectRatio == ratio ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                                }
+                                .contentShape(RoundedRectangle(cornerRadius: 7))
                         }
                         .buttonStyle(.plain)
-                        .padding(.vertical, 8)
-                        .background {
-                            RoundedRectangle(cornerRadius: 7)
-                                .fill(crop.aspectRatio == ratio ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
-                        }
                         .foregroundStyle(crop.aspectRatio == ratio ? .white : .primary)
                     }
                 }
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("变换")
+                Text(language.text("transform"))
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.secondary)
 
                 LazyVGrid(columns: gridColumns, spacing: 8) {
                     CropActionButton(
-                        title: "左右镜像",
+                        title: language.text("flipHorizontal"),
                         systemName: "arrow.left.and.right",
                         isActive: crop.isFlippedHorizontally
                     ) {
-                        crop.isFlippedHorizontally.toggle()
+                        withAnimation(.snappy(duration: 0.18)) {
+                            crop.isFlippedHorizontally.toggle()
+                        }
                     }
 
                     CropActionButton(
-                        title: "上下镜像",
+                        title: language.text("flipVertical"),
                         systemName: "arrow.up.and.down",
                         isActive: crop.isFlippedVertically
                     ) {
-                        crop.isFlippedVertically.toggle()
+                        withAnimation(.snappy(duration: 0.18)) {
+                            crop.isFlippedVertically.toggle()
+                        }
                     }
 
                     CropActionButton(
-                        title: "逆时针 90",
+                        title: language.text("rotateLeft90"),
                         systemName: "rotate.left",
                         isActive: false
                     ) {
-                        crop.rotateCounterclockwise(imageAspectRatio: imageAspectRatio)
+                        withAnimation(.snappy(duration: 0.24)) {
+                            crop.rotateCounterclockwise()
+                        }
                     }
 
                     CropActionButton(
-                        title: "顺时针 90",
+                        title: language.text("rotateRight90"),
                         systemName: "rotate.right",
                         isActive: false
                     ) {
-                        crop.rotateClockwise(imageAspectRatio: imageAspectRatio)
+                        withAnimation(.snappy(duration: 0.24)) {
+                            crop.rotateClockwise()
+                        }
                     }
                 }
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("回车确认裁切")
+                Text(language.text("confirmCrop"))
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.secondary)
-                Text("拖动照片上的白色框选择保留范围，框外灰色区域会被裁掉。")
+                Text(language.text("cropHint"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -110,7 +119,7 @@ struct CropPanel: View {
                     crop = CropSettings()
                 }
             } label: {
-                Label("重置裁切", systemImage: "arrow.counterclockwise")
+                Label(language.text("resetCrop"), systemImage: "arrow.counterclockwise")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -137,14 +146,14 @@ private struct CropActionButton: View {
                     .font(.system(size: 12, weight: .medium))
                     .lineLimit(1)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 54)
+            .background {
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(isActive ? Color.accentColor.opacity(0.16) : Color(nsColor: .controlBackgroundColor))
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 7))
         }
         .buttonStyle(.plain)
-        .padding(.vertical, 10)
-        .background {
-            RoundedRectangle(cornerRadius: 7)
-                .fill(isActive ? Color.accentColor.opacity(0.16) : Color(nsColor: .controlBackgroundColor))
-        }
         .foregroundStyle(isActive ? Color.accentColor : .primary)
     }
 }

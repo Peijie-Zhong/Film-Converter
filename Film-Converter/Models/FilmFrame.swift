@@ -7,7 +7,7 @@ import AppKit
 import SwiftUI
 
 struct FilmFrame: Identifiable, Hashable {
-    let id = UUID()
+    var id = UUID()
     var number: Int
     var title: String
     var exposure: String
@@ -35,9 +35,17 @@ struct PhotoCaptureInfo: Hashable {
     var iso = ""
     var aperture = ""
     var shutterSpeed = ""
+    var exposureCompensation = ""
+    var focalLength = ""
     var capturedAt = ""
     var location = ""
+    var locationLatitude: Double?
+    var locationLongitude: Double?
     var notes = ""
+
+    var hasLocationCoordinate: Bool {
+        locationLatitude != nil && locationLongitude != nil
+    }
 }
 
 struct PhotoEditSettings: Hashable {
@@ -48,7 +56,10 @@ struct PhotoEditSettings: Hashable {
 
 struct MaskRemovalSettings: Hashable {
     var processedImageURL: URL?
-    var temperature = 0.0
+    var hasEstimatedWhiteBalance = false
+    var baseTemperature = 6500.0
+    var baseTint = 0.0
+    var temperature = 6500.0
     var tint = 0.0
     var exposure = 0.0
     var contrast = 0.0
@@ -64,10 +75,18 @@ struct MaskRemovalSettings: Hashable {
         processedImageURL != nil
     }
 
+    var temperatureAdjustment: Double {
+        ((temperature - baseTemperature) / 240).clamped(to: -100...100)
+    }
+
+    var tintAdjustment: Double {
+        tint - baseTint
+    }
+
     var colorAdjustment: Color {
-        let red = (1 + temperature / 170 + tint / 380).clamped(to: 0.55...1.6)
-        let green = (1 - tint / 170).clamped(to: 0.55...1.6)
-        let blue = (1 - temperature / 170 + tint / 380).clamped(to: 0.55...1.6)
+        let red = (1 + temperatureAdjustment / 170 + tintAdjustment / 380).clamped(to: 0.55...1.6)
+        let green = (1 - tintAdjustment / 170).clamped(to: 0.55...1.6)
+        let blue = (1 - temperatureAdjustment / 170 + tintAdjustment / 380).clamped(to: 0.55...1.6)
         return Color(red: red, green: green, blue: blue)
     }
 
@@ -126,22 +145,12 @@ struct CropSettings: Hashable {
         )
     }
 
-    mutating func rotateClockwise(imageAspectRatio: CGFloat) {
+    mutating func rotateClockwise() {
         rotationDegrees = (rotationDegrees + 90) % 360
-        refitSelectionAfterTransform(imageAspectRatio: imageAspectRatio)
     }
 
-    mutating func rotateCounterclockwise(imageAspectRatio: CGFloat) {
+    mutating func rotateCounterclockwise() {
         rotationDegrees = (rotationDegrees + 270) % 360
-        refitSelectionAfterTransform(imageAspectRatio: imageAspectRatio)
-    }
-
-    mutating func refitSelectionAfterTransform(imageAspectRatio: CGFloat) {
-        let canvasAspectRatio = canvasAspectRatio(for: imageAspectRatio)
-        selection = selection.fitted(
-            to: targetAspectRatio(in: canvasAspectRatio),
-            inCanvasAspectRatio: canvasAspectRatio
-        )
     }
 }
 
@@ -189,9 +198,13 @@ enum CropAspectRatio: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var title: String {
+        title(language: .zhHans)
+    }
+
+    func title(language: AppLanguage) -> String {
         switch self {
         case .original:
-            "原始"
+            language == .en ? "Original" : "原始"
         case .square:
             "1:1"
         case .ratio3x2:
@@ -222,29 +235,6 @@ enum CropAspectRatio: String, CaseIterable, Identifiable {
 }
 
 extension FilmFrame {
-    static func makeSet(count: Int, prefix: String, colors: [Color]) -> [FilmFrame] {
-        (1...count).map { index in
-            FilmFrame(
-                number: index,
-                title: "\(prefix)-\(String(format: "%02d", index))",
-                exposure: index.isMultiple(of: 3) ? "+0.7 EV" : "ISO 400 · f/2.8",
-                palette: [
-                    colors[index % colors.count],
-                    colors[(index + 1) % colors.count],
-                    colors[(index + 2) % colors.count]
-                ],
-                captureInfo: PhotoCaptureInfo(
-                    iso: "400",
-                    aperture: "f/2.8",
-                    shutterSpeed: "1/125",
-                    capturedAt: "",
-                    location: "",
-                    notes: ""
-                )
-            )
-        }
-    }
-
     static func imported(from urls: [URL], startingAt startNumber: Int) -> [FilmFrame] {
         urls.enumerated().map { offset, url in
             let number = startNumber + offset

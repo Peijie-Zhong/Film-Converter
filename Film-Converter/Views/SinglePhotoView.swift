@@ -6,8 +6,10 @@
 import SwiftUI
 
 struct SinglePhotoView: View {
+    @Environment(\.appLanguage) private var language
     let roll: FilmRoll
     @Binding var frame: FilmFrame
+    let transitionNamespace: Namespace.ID
     @Binding var activeTool: ToolPanel?
     let onClose: () -> Void
 
@@ -25,7 +27,7 @@ struct SinglePhotoView: View {
                         .font(.system(size: 14, weight: .semibold))
                 }
                 .buttonStyle(.borderless)
-                .help("返回首页")
+                .help(language.text("backHome"))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(frame.title)
@@ -58,12 +60,20 @@ struct SinglePhotoView: View {
 
                     VStack(spacing: 12) {
                         ZStack {
-                            FrameArtwork(frame: frame, appliesCrop: !isCropping)
+                            FrameArtwork(
+                                frame: frame,
+                                appliesCrop: !isCropping,
+                                appliesTransform: true,
+                                cornerRadius: 0
+                            )
                                 .aspectRatio(outputAspectRatio, contentMode: .fill)
                                 .frame(width: photoSize.width, height: photoSize.height)
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                .matchedGeometryEffect(id: frame.id, in: transitionNamespace)
                                 .scaleEffect(zoomScale)
                                 .shadow(color: .black.opacity(0.18), radius: 18, y: 10)
+                                .animation(.snappy(duration: 0.24), value: frame.editSettings.crop.rotationDegrees)
+                                .animation(.snappy(duration: 0.18), value: frame.editSettings.crop.isFlippedHorizontally)
+                                .animation(.snappy(duration: 0.18), value: frame.editSettings.crop.isFlippedVertically)
 
                             ZoomInputView(
                                 onScroll: { deltaY in
@@ -101,9 +111,7 @@ struct SinglePhotoView: View {
 
     private func zoom(by factor: Double) {
         let nextScale = (zoomScale * factor).clamped(to: 0.25...4.0)
-        withAnimation(.snappy(duration: 0.12)) {
-            zoomScale = nextScale
-        }
+        zoomScale = nextScale
     }
 
     private func confirmCrop() {

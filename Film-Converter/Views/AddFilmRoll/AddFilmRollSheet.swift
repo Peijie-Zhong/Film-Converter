@@ -6,14 +6,22 @@
 import SwiftUI
 
 struct AddFilmRollSheet: View {
+    @Environment(\.appLanguage) private var language
     @Environment(\.dismiss) private var dismiss
-    @State private var form = NewFilmRollForm()
+    let catalog: FilmCatalog
+    @State private var form: NewFilmRollForm
 
     let onAdd: (FilmRoll) -> Void
 
+    init(catalog: FilmCatalog, onAdd: @escaping (FilmRoll) -> Void) {
+        self.catalog = catalog
+        self.onAdd = onAdd
+        _form = State(initialValue: NewFilmRollForm(catalog: catalog))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("添加胶卷")
+            Text(language.text("addRoll"))
                 .font(.system(size: 22, weight: .semibold))
                 .padding(.horizontal, 24)
                 .padding(.top, 22)
@@ -22,12 +30,12 @@ struct AddFilmRollSheet: View {
             Divider()
 
             HStack(spacing: 0) {
-                FilmStockPickerList(selectedStock: $form.stock)
+                FilmStockPickerList(stocks: catalog.stocks, selectedStock: $form.stock)
                     .frame(width: 350)
 
                 Divider()
 
-                FilmRollParameterForm(form: $form)
+                FilmRollParameterForm(catalog: catalog, form: $form)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
@@ -35,15 +43,17 @@ struct AddFilmRollSheet: View {
 
             HStack {
                 Spacer()
-                Button("取消") {
+                Button(language.text("cancel")) {
                     dismiss()
                 }
-                Button("添加") {
-                    onAdd(FilmRoll.created(from: form))
+                Button(language.text("add")) {
+                    if let fallbackStock = catalog.defaultStock {
+                        onAdd(FilmRoll.created(from: form, fallbackStock: fallbackStock))
+                    }
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(form.isoText.isEmpty)
+                .disabled(form.isoText.isEmpty || form.stock == nil || catalog.defaultStock == nil)
             }
             .padding(18)
         }
@@ -52,10 +62,11 @@ struct AddFilmRollSheet: View {
 }
 
 private struct FilmStockPickerList: View {
-    @Binding var selectedStock: FilmStock
+    let stocks: [FilmStock]
+    @Binding var selectedStock: FilmStock?
 
     private var groupedStocks: [(letter: String, stocks: [FilmStock])] {
-        let groups = Dictionary(grouping: FilmStock.library) { stock in
+        let groups = Dictionary(grouping: stocks) { stock in
             String(stock.model.prefix(1)).uppercased()
         }
 
@@ -163,6 +174,8 @@ private struct FilmStockRow: View {
 }
 
 private struct FilmRollParameterForm: View {
+    @Environment(\.appLanguage) private var language
+    let catalog: FilmCatalog
     @Binding var form: NewFilmRollForm
 
     private var isoBinding: Binding<String> {
@@ -174,35 +187,42 @@ private struct FilmRollParameterForm: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            FormSection(title: "基本参数") {
-                LabeledContent("胶卷型号") {
-                    Text(form.stock.model)
+            FormSection(title: language.text("basicParameters")) {
+                LabeledContent(language.text("filmModel")) {
+                    Text(form.stock?.model ?? language.text("notSelected"))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .foregroundStyle(.secondary)
                 }
 
-                Picker("Format", selection: $form.format) {
-                    ForEach(FilmFormat.allCases) { format in
-                        Text(format.rawValue).tag(format)
+                Picker(language.text("cameraModel"), selection: $form.cameraModel) {
+                    Text(language.text("notSelected")).tag("")
+                    ForEach(catalog.cameraModels) { camera in
+                        Text(camera.name).tag(camera.name)
                     }
                 }
 
-                Picker("尺寸", selection: $form.frameSize) {
-                    ForEach(FilmFrameSize.allCases) { size in
-                        Text(size.rawValue).tag(size)
+                Picker("Format", selection: $form.format) {
+                    ForEach(catalog.formats) { format in
+                        Text(format.name).tag(format.name)
+                    }
+                }
+
+                Picker(language.text("frameSize"), selection: $form.frameSize) {
+                    ForEach(catalog.frameSizes) { size in
+                        Text(size.name).tag(size.name)
                     }
                 }
             }
 
-            FormSection(title: "拍摄信息") {
-                LabeledContent("使用的 ISO") {
+            FormSection(title: language.text("shootingInfo")) {
+                LabeledContent(language.text("usedISO")) {
                     TextField("400", text: isoBinding)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 120)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Notes")
+                    Text(language.text("notes"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
 

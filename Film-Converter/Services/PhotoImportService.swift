@@ -7,10 +7,10 @@ import AppKit
 import UniformTypeIdentifiers
 
 enum PhotoImportService {
-    static func choosePhotos() -> [URL] {
+    static func choosePhotos(language: AppLanguage = .zhHans) -> [URL] {
         let panel = NSOpenPanel()
-        panel.title = "导入照片"
-        panel.prompt = "导入"
+        panel.title = language.text("importPhotos")
+        panel.prompt = language.text("import")
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
@@ -23,7 +23,7 @@ enum PhotoImportService {
         return imageURLs(from: panel.urls)
     }
 
-    private static func imageURLs(from urls: [URL]) -> [URL] {
+    static func imageURLs(from urls: [URL]) -> [URL] {
         urls.flatMap { url in
             guard let values = try? url.resourceValues(forKeys: [.isDirectoryKey]),
                   values.isDirectory == true else {
